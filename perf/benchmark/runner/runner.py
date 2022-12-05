@@ -39,7 +39,7 @@ processes = []
 
 
 def pod_info(filterstr="", namespace=NAMESPACE, multi_ok=True):
-    cmd = "kubectl -n {namespace} get pod {filterstr}  -o json".format(
+    cmd = "kubectl -n {namespace} get pod {filterstr} -o json".format(
         namespace=namespace, filterstr=filterstr)
     op = getoutput(cmd)
     o = json.loads(op)
@@ -122,6 +122,7 @@ class Fortio:
             mesh="istio",
             cacert=None,
             jitter=False,
+            uniform=False,
             load_gen_type="fortio"):
         self.run_id = str(uuid.uuid4()).partition('-')[0]
         self.headers = headers
@@ -148,6 +149,7 @@ class Fortio:
         self.run_ingress = ingress
         self.cacert = cacert
         self.jitter = jitter
+        self.uniform = uniform
         self.load_gen_type = load_gen_type
 
         if mesh == "linkerd":
@@ -248,12 +250,12 @@ class Fortio:
 
         return headers_cmd
 
-    def generate_fortio_cmd(self, headers_cmd, conn, qps, duration, grpc, cacert_arg, jitter, labels):
+    def generate_fortio_cmd(self, headers_cmd, conn, qps, duration, grpc, cacert_arg, jitter, uniform, labels):
         if duration is None:
             duration = self.duration
 
         fortio_cmd = (
-            "fortio load {headers} -jitter={jitter} -c {conn} -qps {qps} -t {duration}s -a -r {r} {cacert_arg} {grpc} "
+            "fortio load {headers} -jitter={jitter} -uniform={uniform} -c {conn} -qps {qps} -t {duration}s -a -r {r} {cacert_arg} {grpc} "
             "-httpbufferkb=128 -labels {labels}").format(
             headers=headers_cmd,
             conn=conn,
@@ -262,6 +264,7 @@ class Fortio:
             r=self.r,
             grpc=grpc,
             jitter=jitter,
+            uniform=uniform,
             cacert_arg=cacert_arg,
             labels=labels)
 
@@ -330,7 +333,7 @@ class Fortio:
 
         load_gen_cmd = ""
         if self.load_gen_type == "fortio":
-            load_gen_cmd = self.generate_fortio_cmd(headers_cmd, conn, qps, duration, grpc, cacert_arg, self.jitter, labels)
+            load_gen_cmd = self.generate_fortio_cmd(headers_cmd, conn, qps, duration, grpc, cacert_arg, self.jitter, self.uniform, labels)
         elif self.load_gen_type == "nighthawk":
             # TODO(oschaaf): Figure out how to best determine the right concurrency for Nighthawk.
             # Results seem to get very noisy as the number of workers increases, are the clients
@@ -454,6 +457,7 @@ def fortio_from_config_file(args):
         fortio.protocol_mode = job_config.get('protocol_mode', 'http')
         fortio.extra_labels = job_config.get('extra_labels')
         fortio.jitter = job_config.get("jitter", False)
+        fortio.uniform = job_config.get("uniform", False)
 
         return fortio
 
@@ -490,6 +494,7 @@ def run_perf_test(args):
             telemetry_mode=args.telemetry_mode,
             cacert=args.cacert,
             jitter=args.jitter,
+            uniform=args.uniform,
             load_gen_type=args.load_gen_type)
 
     if fortio.duration <= min_duration:
@@ -648,6 +653,10 @@ def get_parser():
     parser.add_argument(
         "--jitter",
         help="to enable or disable jitter for load generator",
+        default=False)
+    parser.add_argument(
+        "--uniform",
+        help="to enable or disable uniform mode for the fortio load generator",
         default=False)
     parser.add_argument(
         "--load_gen_type",
