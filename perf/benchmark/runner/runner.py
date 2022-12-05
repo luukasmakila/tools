@@ -123,6 +123,7 @@ class Fortio:
             cacert=None,
             jitter=False,
             uniform=False,
+            nocatchup=False,
             load_gen_type="fortio"):
         self.run_id = str(uuid.uuid4()).partition('-')[0]
         self.headers = headers
@@ -150,6 +151,7 @@ class Fortio:
         self.cacert = cacert
         self.jitter = jitter
         self.uniform = uniform
+        self.nocatchup = nocatchup
         self.load_gen_type = load_gen_type
 
         if mesh == "linkerd":
@@ -250,12 +252,12 @@ class Fortio:
 
         return headers_cmd
 
-    def generate_fortio_cmd(self, headers_cmd, conn, qps, duration, grpc, cacert_arg, jitter, uniform, labels):
+    def generate_fortio_cmd(self, headers_cmd, conn, qps, duration, grpc, cacert_arg, jitter, uniform, nocatchup, labels):
         if duration is None:
             duration = self.duration
 
         fortio_cmd = (
-            "fortio load {headers} -jitter={jitter} -uniform={uniform} -c {conn} -qps {qps} -t {duration}s -a -r {r} {cacert_arg} {grpc} "
+            "fortio load {headers} -jitter={jitter} -uniform={uniform} -nocatchup={nocatchup} -c {conn} -qps {qps} -t {duration}s -a -r {r} {cacert_arg} {grpc} "
             "-httpbufferkb=128 -labels {labels}").format(
             headers=headers_cmd,
             conn=conn,
@@ -265,6 +267,7 @@ class Fortio:
             grpc=grpc,
             jitter=jitter,
             uniform=uniform,
+            nocatchup=nocatchup,
             cacert_arg=cacert_arg,
             labels=labels)
 
@@ -333,7 +336,7 @@ class Fortio:
 
         load_gen_cmd = ""
         if self.load_gen_type == "fortio":
-            load_gen_cmd = self.generate_fortio_cmd(headers_cmd, conn, qps, duration, grpc, cacert_arg, self.jitter, self.uniform, labels)
+            load_gen_cmd = self.generate_fortio_cmd(headers_cmd, conn, qps, duration, grpc, cacert_arg, self.jitter, self.uniform, self.nocatchup, labels)
         elif self.load_gen_type == "nighthawk":
             # TODO(oschaaf): Figure out how to best determine the right concurrency for Nighthawk.
             # Results seem to get very noisy as the number of workers increases, are the clients
@@ -458,6 +461,7 @@ def fortio_from_config_file(args):
         fortio.extra_labels = job_config.get('extra_labels')
         fortio.jitter = job_config.get("jitter", False)
         fortio.uniform = job_config.get("uniform", False)
+        fortio.nocatchup = job_config.get("nocatchup", False)
 
         return fortio
 
@@ -495,6 +499,7 @@ def run_perf_test(args):
             cacert=args.cacert,
             jitter=args.jitter,
             uniform=args.uniform,
+            nocatchup=args.nocatchup,
             load_gen_type=args.load_gen_type)
 
     if fortio.duration <= min_duration:
@@ -657,6 +662,10 @@ def get_parser():
     parser.add_argument(
         "--uniform",
         help="to enable or disable uniform mode for the fortio load generator",
+        default=False)
+    parser.add_argument(
+        "--nocatchup",
+        help="to enable or disable nocatchup mode for the fortio load generator",
         default=False)
     parser.add_argument(
         "--load_gen_type",
