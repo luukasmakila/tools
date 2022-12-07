@@ -47,6 +47,9 @@ export DNS_DOMAIN="fake-dns.org"
 export LOAD_GEN_TYPE=${LOAD_GEN_TYPE:-"fortio"}
 export FORTIO_CLIENT_URL=""
 export IOPS=${IOPS:-istioctl_profiles/default-overlay.yaml}
+# For adding or modifying configurations, refer to perf/benchmark/README.md
+export CONFIG_DIR=${CONFIG_DIR:-"${WD}/configs/istio"}
+export PERF_TEST_CONFIGURATION=${PERF_TEST_CONFIGURATION:-"${WD}/configs/run_perf_test.conf"}
 
 # Other Env vars
 export GCS_BUCKET=${GCS_BUCKET:-"istio-build/perf"}
@@ -224,10 +227,8 @@ apt-get update && apt-get -y install linux-tools-generic
 # Start run perf test
 echo "Start to run perf benchmark test, all collected data will be dumped to GCS bucket: ${GCS_BUCKET}/${OUTPUT_DIR}"
 
-# For adding or modifying configurations, refer to perf/benchmark/README.md
-CONFIG_DIR="${WD}/configs/istio"
 # Read through perf test configuration file to determine which group of test configuration to run or not run
-read_perf_test_conf "${WD}/configs/run_perf_test.conf"
+read_perf_test_conf "${PERF_TEST_CONFIGURATION}"  
 
 for dir in "${CONFIG_DIR}"/*; do
     # Get the last directory name after splitting dir path by '/', which is the configuration dir name
