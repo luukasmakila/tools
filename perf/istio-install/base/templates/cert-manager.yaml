@@ -1,4 +1,4 @@
-{{- if and $.Values.certManager.enabled (ne $.Values.certManager.email "") }}
+{{- if $.Values.certManager.enabled }}
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
