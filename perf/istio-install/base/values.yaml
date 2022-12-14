@@ -10,7 +10,7 @@ storageclass:
 domain: v103.qualistio.org
 
 certManager:
-  enabled: true
+  enabled: false
   # Can be prod/staging
   server: prod
   email: ""
