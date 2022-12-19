@@ -93,8 +93,8 @@ function install_extras() {
   # Deploy the gateways and prometheus operator.
   # Deploy CRDs with create, they are too big otherwise
   kubectl create -f base/files || true # Might fail if we already installed, so allow failures
-  kubectl apply -f "${WD}/addons/cert-manager.yaml"
   if [[ "${certmanagerEmail:-}" != "" ]]; then
+    kubectl apply -f "${WD}/addons/cert-manager.yaml"
     kubectl wait --for=condition=Available deployments --all -n cert-manager
     helm template --set domain="${domain}" --set certManager.email="${certmanagerEmail}" --set certManager.enabled=true "${WD}/base" | kubectl apply -f -
   else
