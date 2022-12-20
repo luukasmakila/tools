@@ -460,6 +460,7 @@ def fortio_from_config_file(args):
         fortio.protocol_mode = job_config.get('protocol_mode', 'http')
         fortio.extra_labels = job_config.get('extra_labels')
         fortio.jitter = job_config.get("jitter", False)
+        fortio.cacert = job_config.get("cacert", None)
         fortio.uniform = job_config.get("uniform", False)
         fortio.nocatchup = job_config.get("nocatchup", False)
 

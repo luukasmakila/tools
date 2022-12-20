@@ -50,6 +50,8 @@ export IOPS=${IOPS:-istioctl_profiles/default-overlay.yaml}
 # For adding or modifying configurations, refer to perf/benchmark/README.md
 export CONFIG_DIR=${CONFIG_DIR:-"${WD}/configs/istio"}
 export PERF_TEST_CONFIGURATION=${PERF_TEST_CONFIGURATION:-"${WD}/configs/run_perf_test.conf"}
+# For enabling fortio server ingress cert for testing with TLS
+export FORTIO_SERVER_INGRESS_CERT_ENABLED="${FORTIO_SERVER_INGRESS_CERT_ENABLED:-false}"
 
 # Other Env vars
 export GCS_BUCKET=${GCS_BUCKET:-"istio-build/perf"}
