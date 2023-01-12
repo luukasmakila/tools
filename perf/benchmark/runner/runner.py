@@ -124,7 +124,9 @@ class Fortio:
             jitter=False,
             uniform=False,
             nocatchup=False,
-            load_gen_type="fortio"):
+            load_gen_type="fortio",
+            keepalive=True,
+            connection_reuse='1:1000000000000'):
         self.run_id = str(uuid.uuid4()).partition('-')[0]
         self.headers = headers
         self.conn = conn
@@ -153,6 +155,8 @@ class Fortio:
         self.uniform = uniform
         self.nocatchup = nocatchup
         self.load_gen_type = load_gen_type
+        self.keepalive = keepalive
+        self.connection_reuse = connection_reuse
 
         if mesh == "linkerd":
             self.mesh = "linkerd"
@@ -251,13 +255,11 @@ class Fortio:
                 headers_cmd += "-H=" + header_val + " "
 
         return headers_cmd
-
-    def generate_fortio_cmd(self, headers_cmd, conn, qps, duration, grpc, cacert_arg, jitter, uniform, nocatchup, labels):
+    def generate_fortio_cmd(self, headers_cmd, conn, qps, duration, grpc, cacert_arg, jitter, uniform, nocatchup, keepalive, connection_reuse, labels):
         if duration is None:
             duration = self.duration
-
         fortio_cmd = (
-            "fortio load {headers} -jitter={jitter} -uniform={uniform} -nocatchup={nocatchup} -c {conn} -qps {qps} -t {duration}s -a -r {r} {cacert_arg} {grpc} "
+            "fortio load {headers} -jitter={jitter} -uniform={uniform} -nocatchup={nocatchup} --keepalive={keepalive} --connection-reuse={connection_reuse} -c {conn} -qps {qps} -t {duration}s -a -r {r} {cacert_arg} {grpc} "
             "-httpbufferkb=128 -labels {labels}").format(
             headers=headers_cmd,
             conn=conn,
@@ -269,7 +271,9 @@ class Fortio:
             uniform=uniform,
             nocatchup=nocatchup,
             cacert_arg=cacert_arg,
-            labels=labels)
+            labels=labels,
+            keepalive=keepalive,
+            connection_reuse=connection_reuse)
 
         return fortio_cmd
 
@@ -336,7 +340,7 @@ class Fortio:
 
         load_gen_cmd = ""
         if self.load_gen_type == "fortio":
-            load_gen_cmd = self.generate_fortio_cmd(headers_cmd, conn, qps, duration, grpc, cacert_arg, self.jitter, self.uniform, self.nocatchup, labels)
+            load_gen_cmd = self.generate_fortio_cmd(headers_cmd, conn, qps, duration, grpc, cacert_arg, self.jitter, self.uniform, self.nocatchup, self.keepalive, self.connection_reuse, labels)
         elif self.load_gen_type == "nighthawk":
             # TODO(oschaaf): Figure out how to best determine the right concurrency for Nighthawk.
             # Results seem to get very noisy as the number of workers increases, are the clients
@@ -463,6 +467,8 @@ def fortio_from_config_file(args):
         fortio.cacert = job_config.get("cacert", None)
         fortio.uniform = job_config.get("uniform", False)
         fortio.nocatchup = job_config.get("nocatchup", False)
+        fortio.keepalive = job_config.get("keepalive", False)
+        fortio.connection_reuse = job_config.get("connection_reuse", "1:1000000000000")
 
         return fortio
 
@@ -501,7 +507,9 @@ def run_perf_test(args):
             jitter=args.jitter,
             uniform=args.uniform,
             nocatchup=args.nocatchup,
-            load_gen_type=args.load_gen_type)
+            load_gen_type=args.load_gen_type,
+            keepalive=args.keepalive,
+            connection_reuse=args.connection_reuse)
 
     if fortio.duration <= min_duration:
         print("Duration must be greater than {min_duration}".format(
@@ -671,7 +679,15 @@ def get_parser():
     parser.add_argument(
         "--load_gen_type",
         help="fortio or nighthawk",
-        default="fortio",
+        default="fortio")
+    parser.add_argument(
+        "--keepalive",
+        help="Connection keepalive",
+        default=True)
+    parser.add_argument(
+        "--connection_reuse",
+        help="Range min:max for the max number of connections to reuse for each thread, default to unlimited.",
+        default="1:1000000000000"
     )
 
     define_bool(parser, "baseline", "run baseline for all", False)
