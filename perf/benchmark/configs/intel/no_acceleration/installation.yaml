@@ -1,0 +1,45 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+spec:
+  profile: default
+  meshConfig:
+#    Enable for envoy debugging
+#    accessLogFile: /dev/stdout
+#    accessLogFormat: "[%START_TIME%] %REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL% %RESPONSE_CODE% %RESPONSE_FLAGS% %RESPONSE_CODE_DETAILS% %CONNECTION_TERMINATION_DETAILS%
+#%UPSTREAM_TRANSPORT_FAILURE_REASON% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% %REQ(X-FORWARDED-FOR)% %REQ(USER-AGENT)% %REQ(X-REQUEST-ID)%
+#%REQ(:AUTHORITY)% %UPSTREAM_HOST% %UPSTREAM_CLUSTER% %UPSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_REMOTE_ADDRESS% %REQUESTED_SERVER_NAME% %ROUTE_NAME% %REQ(Accept-Encoding)%\n"
+    defaultConfig:
+      proxyStatsMatcher:
+        inclusionPrefixes:
+          - "listener"
+          - "http"
+
+  components:
+    ingressGateways:
+    - enabled: true
+      name: istio-ingressgateway
+      k8s:
+        overlays:
+          - kind: Deployment
+            name: istio-ingressgateway
+            patches:
+            - path: spec.template.spec.containers.[name:istio-proxy].args.[-1]
+              value: "--concurrency=2"
+        # Limit CPU/MEM usage to 2 vCPUs/4 GB for QoS reasons.
+        # Enable CPU manager static policy in kubelet to even more deterministic results.
+        resources:
+          requests:
+            cpu: 2000m
+            memory: 4096Mi
+          limits:
+            cpu: 2000m
+            memory: 4096Mi
+        hpaSpec:
+          maxReplicas: 1
+          minReplicas: 1
+# Enable for Envoy debug log level
+#    global:
+#      proxy:
+#        logLevel: debug
+#      logging:
+#        level: debug
