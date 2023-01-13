@@ -126,7 +126,7 @@ class Fortio:
             nocatchup=False,
             load_gen_type="fortio",
             keepalive=True,
-            connection_reuse='1:1000000000000'):
+            connection_reuse=None):
         self.run_id = str(uuid.uuid4()).partition('-')[0]
         self.headers = headers
         self.conn = conn
@@ -255,11 +255,11 @@ class Fortio:
                 headers_cmd += "-H=" + header_val + " "
 
         return headers_cmd
-    def generate_fortio_cmd(self, headers_cmd, conn, qps, duration, grpc, cacert_arg, jitter, uniform, nocatchup, keepalive, connection_reuse, labels):
+    def generate_fortio_cmd(self, headers_cmd, conn, qps, duration, grpc, cacert_arg, jitter, uniform, nocatchup, keepalive, connection_reuse_arg, labels):
         if duration is None:
             duration = self.duration
         fortio_cmd = (
-            "fortio load {headers} -jitter={jitter} -uniform={uniform} -nocatchup={nocatchup} --keepalive={keepalive} --connection-reuse={connection_reuse} -c {conn} -qps {qps} -t {duration}s -a -r {r} {cacert_arg} {grpc} "
+            "fortio load {headers} -jitter={jitter} -uniform={uniform} -nocatchup={nocatchup} -keepalive={keepalive} {connection_reuse_arg} -c {conn} -qps {qps} -t {duration}s -a -r {r} {cacert_arg} {grpc} "
             "-httpbufferkb=128 -labels {labels}").format(
             headers=headers_cmd,
             conn=conn,
@@ -273,7 +273,7 @@ class Fortio:
             cacert_arg=cacert_arg,
             labels=labels,
             keepalive=keepalive,
-            connection_reuse=connection_reuse)
+            connection_reuse_arg=connection_reuse_arg)
 
         return fortio_cmd
 
@@ -336,11 +336,15 @@ class Fortio:
         if self.cacert is not None:
             cacert_arg = "-cacert {cacert_path}".format(cacert_path=self.cacert)
 
+        connection_reuse_arg = ""
+        if self.connection_reuse is not None:
+            connection_reuse_arg = "-connection-reuse={connection_reuse}".format(connection_reuse=self.connection_reuse)
+
         headers_cmd = self.generate_headers_cmd(headers)
 
         load_gen_cmd = ""
         if self.load_gen_type == "fortio":
-            load_gen_cmd = self.generate_fortio_cmd(headers_cmd, conn, qps, duration, grpc, cacert_arg, self.jitter, self.uniform, self.nocatchup, self.keepalive, self.connection_reuse, labels)
+            load_gen_cmd = self.generate_fortio_cmd(headers_cmd, conn, qps, duration, grpc, cacert_arg, self.jitter, self.uniform, self.nocatchup, self.keepalive, connection_reuse_arg, labels)
         elif self.load_gen_type == "nighthawk":
             # TODO(oschaaf): Figure out how to best determine the right concurrency for Nighthawk.
             # Results seem to get very noisy as the number of workers increases, are the clients
@@ -468,7 +472,7 @@ def fortio_from_config_file(args):
         fortio.uniform = job_config.get("uniform", False)
         fortio.nocatchup = job_config.get("nocatchup", False)
         fortio.keepalive = job_config.get("keepalive", False)
-        fortio.connection_reuse = job_config.get("connection_reuse", "1:1000000000000")
+        fortio.connection_reuse = job_config.get("connection_reuse", None)
 
         return fortio
 
@@ -687,7 +691,7 @@ def get_parser():
     parser.add_argument(
         "--connection_reuse",
         help="Range min:max for the max number of connections to reuse for each thread, default to unlimited.",
-        default="1:1000000000000"
+        default=None
     )
 
     define_bool(parser, "baseline", "run baseline for all", False)

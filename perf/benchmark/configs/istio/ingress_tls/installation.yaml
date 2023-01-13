@@ -12,7 +12,6 @@ spec:
       proxyStatsMatcher:
         inclusionPrefixes:
           - "listener"
-          - "http"
 
   components:
     ingressGateways:

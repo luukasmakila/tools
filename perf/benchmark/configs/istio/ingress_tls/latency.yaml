@@ -1,13 +1,11 @@
 # Data: latency
-# Config: security_authz_ip
-# VM mode: nullvm
 telemetry_mode: "none"
 conn:
   - 2
-  - 4
-  - 8
+qps:
+  - 10
 
-duration: 240
+duration: 120
 perf_record: false
 run_bothsidecar: false
 run_serversidecar: false
@@ -16,7 +14,7 @@ run_baseline: false
 
 jitter: false
 
-run_ingress: "istio-ingressgateway.istio-system.svc.cluster.local"
+run_ingress: "https://istio-ingressgateway.istio-system.svc.cluster.local"
 headers: "Host:fortioserver.fake-dns.org"
 cacert: "/tmp/gateway-secret/tls.crt"
 
