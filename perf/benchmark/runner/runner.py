@@ -471,7 +471,7 @@ def fortio_from_config_file(args):
         fortio.cacert = job_config.get("cacert", None)
         fortio.uniform = job_config.get("uniform", False)
         fortio.nocatchup = job_config.get("nocatchup", False)
-        fortio.keepalive = job_config.get("keepalive", False)
+        fortio.keepalive = job_config.get("keepalive", True)
         fortio.connection_reuse = job_config.get("connection_reuse", None)
 
         return fortio

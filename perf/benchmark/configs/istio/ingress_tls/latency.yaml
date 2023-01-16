@@ -1,11 +1,17 @@
 # Data: latency
+# Config: Ingress gateway TLS
 telemetry_mode: "none"
 conn:
-  - 2
+    - 2
+    - 4
+    - 8
+    - 16
+    - 32
+    - 64
 qps:
-  - 10
+    - 1000
 
-duration: 120
+duration: 240
 perf_record: false
 run_bothsidecar: false
 run_serversidecar: false
@@ -20,5 +26,4 @@ cacert: "/tmp/gateway-secret/tls.crt"
 
 uniform: true
 nocatchup: true
-keepalive: true
-connection_reuse: '1:60'
+connection_reuse: '10:10'
